@@ -1,0 +1,18 @@
+#BlueJ class context
+comment0.target=Pathfinder
+comment0.text=\r\n@Author\ Kavan\r\nVariation\ of\ A*\ Pathfinding\r\n
+comment1.params=
+comment1.target=Pathfinder()
+comment2.params=
+comment2.target=void\ keys()
+comment3.params=
+comment3.target=void\ clearSets()
+comment4.params=
+comment4.target=void\ search()
+comment5.params=end
+comment5.target=void\ showSolution(Pathfinder.Branch)
+comment6.params=b
+comment6.target=void\ expandFrontier(Pathfinder.Branch)
+comment7.params=
+comment7.target=void\ act()
+numComments=8

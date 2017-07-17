@@ -1,0 +1,10 @@
+#BlueJ class context
+comment0.target=Goal
+comment0.text=\r\n\ @Author\ Kavan\r\n
+comment1.params=
+comment1.target=Goal()
+comment2.params=
+comment2.target=void\ moveGoal()
+comment3.params=
+comment3.target=void\ act()
+numComments=4
