@@ -1,5 +1,3 @@
-package com.company;
-
 import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
 
 /**
