@@ -30,7 +30,7 @@ public class Maze extends World
      * Generates a random wall configuration on the maze
      * Note: there is no guaranteed path
      */
-    public void generateMaze()
+    public void generateMaze(){
         removeObjects(getObjects(Wall.class));
         int numWalls = (int)(Math.random()*getWidth()*getHeight()/2);
         for(int x = 0; x < numWalls; x++)
@@ -45,14 +45,11 @@ public class Maze extends World
     /**
      * @return the goal of this maze
      */
-    public Goal getGoal()
-    {
+    public Goal getGoal(){
         return g;
     }
-    public void act()
-    {
-        if(Greenfoot.isKeyDown("g"))
-        {
+    public void act(){
+        if(Greenfoot.isKeyDown("g")){
             generateMaze();
         }
     }
