@@ -1,15 +1,25 @@
+package com.company;
+
 import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
 
 /**
+ * A Maze for the Pathfinder to navigate through.
+ *
  * @Author Kavan
+ *
+ * @param g: the goal of this maze
+ * @param p: the Pathfinder that wants to navigate to the goal
  */
 public class Maze extends World
 {
     private Goal g;
     private Pathfinder p;
-    public Maze()
-    {    
-        // Create a new world with 600x400 cells with a cell size of 1x1 pixels.
+
+
+    /**
+     * Creates a new maze of size 23x23 with a Pathfinder and Goal
+     */
+    public Maze(){
         super(23, 23, 50);
         g = new Goal();
         p = new Pathfinder();
@@ -17,8 +27,12 @@ public class Maze extends World
         addObject(g, 0, 0);
         addObject(p, getWidth(), getHeight());
     }
-    public void generateMaze()//path that exists is not guaranteed
-    {
+
+    /**
+     * Generates a random wall configuration on the maze
+     * Note: there is no guaranteed path
+     */
+    public void generateMaze()
         removeObjects(getObjects(Wall.class));
         int numWalls = (int)(Math.random()*getWidth()*getHeight()/2);
         for(int x = 0; x < numWalls; x++)
@@ -29,6 +43,10 @@ public class Maze extends World
                 addObject(new Wall(), i, j);
         }
     }
+
+    /**
+     * @return the goal of this maze
+     */
     public Goal getGoal()
     {
         return g;
@@ -41,3 +59,4 @@ public class Maze extends World
         }
     }
 }
+
