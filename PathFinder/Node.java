@@ -1,6 +1,21 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
 import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
 import java.awt.Color;
+
+/**
+ * A* Node
+ *
+ * @PIXEL_SIZE: the size of this node
+ * @parent_: the parent node that results in the lowest cost
+ * @g_: the goal that heuristics are based off of
+ * @FS: font size for labels
+ * @heuristic_: the current best heuristic assigned to this Node
+ * @x_: the x coordinate of this Node
+ * @y_: the y coordinate of this Node
+ * @d_: the approximate Manhattan distance to the goal from this Node
+ * @hasNotBeenCheck: True if this Node has been checked; false otherwise
+ * @valid: True if this Node is valid; i.e. if this node can be traversed; false otherwise
+ */
 public class Node extends Actor
 {
     private final static int PIXEL_SIZE = 30;
@@ -13,6 +28,14 @@ public class Node extends Actor
     private double d_;
     private boolean hasNotBeenChecked;
     private boolean valid;
+
+    /**
+     * Create a new node
+     * @param x: the x coordinate of this Node
+     * @param y: the y coordinate of this Node
+     * @param g: the Goal this Node will base heuristics off of
+     * @param parent: the Parent Node to this node, if there is one;
+     */
     public Node(int x, int y, Goal g, Node parent)
     {
         this.setImage(new GreenfootImage(PIXEL_SIZE, PIXEL_SIZE));
@@ -25,14 +48,27 @@ public class Node extends Actor
         d_ = Math.abs(g.getX() - x_) + Math.abs(g.getY()-y_);
         heuristic_ = Double.MAX_VALUE;
     }
+
+    /**
+     * @return manhattan distance to the goal
+     */
     public double getD()
     {
         return d_;
     }
+
+    /**
+     * @return the current best parent; i.e. the one with the lowest cost
+     */
     public Node getParent()
     {
         return parent_;
     }
+
+    /**
+     * Checks if this Node is traverseable
+     * @return: True: if this Node is not off-screen or in a wall
+     */
     public boolean isInvalid()
     {
         if(hasNotBeenChecked)
@@ -43,6 +79,11 @@ public class Node extends Actor
         else
             return valid;
     }
+
+    /**
+     * checks if a Node is better than the parent, and replaces the parent if so.
+     * @param n: the Node to be checked
+     */
     public void updateHeuristic(Node n)//updates if the new parent is better
     {
         if(this.isInvalid())
@@ -66,17 +107,27 @@ public class Node extends Actor
             updateImage();
         }
     }
+    
+    
     public void setFontColor(java.awt.Color c)//for debugging purposes
     {
         GreenfootImage img = new GreenfootImage(cost_ + "", FS, c, null);
         this.setImage(img);
     }
-    private void updateImage()//updates the image with the new cost, or heuristic
+
+    /**
+     * updates the image with the new cost, or heuristic
+     */
+    private void updateImage()
     {
         GreenfootImage img = new GreenfootImage(cost_ + "", FS, null, null);
         //GreenfootImage img = new GreenfootImage(cost_ + "", FS, null, null);
         this.setImage(img);
     }
+
+    /**
+     * Changes the color of this Node to display a path
+     */
     public void displayPath()
     {
         GreenfootImage img = new GreenfootImage(PIXEL_SIZE, PIXEL_SIZE);
@@ -84,22 +135,43 @@ public class Node extends Actor
         img.fill();
         this.setImage(img);
     }
-    public void clear()//sets the image to a white square
+
+    /**
+     * Changes this Node to be a white square
+     */
+    public void clear()
     {
         this.setImage(new GreenfootImage(PIXEL_SIZE, PIXEL_SIZE));
     }
+
+    /**
+     * Check if this Node is at the goal
+     * @return: True if this Node is at the Goal, False otherwise
+     */
     public boolean isAtGoal()
     {
         return this.isTouching(Goal.class);
     }
+
+    /**
+     * Return the heuristic of this Node
+     * @return: the current heuristic
+     */
     public double getHeuristic()
     {
         return heuristic_;
     }
-    public double calcH(Node n)//"recursively" finds the cost of this node using the cost of a parent - same idea as computing the fibonacci sequence
+
+    /**
+     * Calculates the heuristic given a Node n
+     * "recursively" finds the cost of this node using the cost of a parent
+     * - same idea as computing the fibonacci sequence
+     * @param n
+     * @return
+     */
+    public double calcH(Node n)
     {
         double posCost = n.cost_ + 1;
         return posCost + d_;
     }
 }
-
