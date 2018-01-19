@@ -1,177 +1,249 @@
 import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
-import greenfoot.*;  // (World, Actor, GreenfootImage, Greenfoot and MouseInfo)
+import java.util.*;
 import java.awt.Color;
-
 /**
- * A* Node
- *
- * @PIXEL_SIZE: the size of this node
- * @parent_: the parent node that results in the lowest cost
- * @g_: the goal that heuristics are based off of
- * @FS: font size for labels
- * @heuristic_: the current best heuristic assigned to this Node
- * @x_: the x coordinate of this Node
- * @y_: the y coordinate of this Node
- * @d_: the approximate Manhattan distance to the goal from this Node
- * @hasNotBeenCheck: True if this Node has been checked; false otherwise
- * @valid: True if this Node is valid; i.e. if this node can be traversed; false otherwise
+ * @Author Kavan
+ * Pathfinder for A*
+ * 
+ * @frontier: arraylist of next nodes to be expanded, sorted by heuristic
+ * @closed: boolean array of coordinates that have already been searched
+ * @running: True if the pathfinder is searching for a path, false otherwise
+ * @worldwidth_: the width of the world this pathfinder exists in, in px
+ * @worldHeight_: the height of the world this pathfinder exists in, in px
+ * @nodeMap: a 2D array containing all Nodes, indexed by x,y coordinates
+ * @g: the goal this pathfinder is searching for
  */
-public class Node extends Actor
+public class Pathfinder extends Actor
 {
-    private final static int PIXEL_SIZE = 30;
-    private Node parent_;
-    private Goal g_;
-    private int cost_;
-    private static final int FS = 25;
-    private double heuristic_;
-    private int x_, y_;
-    private double d_;
-    private boolean hasNotBeenChecked;
-    private boolean valid;
+    private ArrayList<Branch> frontier;
+    private boolean[][] closed;
+    private boolean running;
+    private boolean initialized;
+    private int worldWidth_, worldHeight_;
+    private Node[][] nodeMap;
+    private static final int BUFFER = 3, OFFSET = 1;
+    private Goal g;
 
     /**
-     * Create a new node
-     * @param x: the x coordinate of this Node
-     * @param y: the y coordinate of this Node
-     * @param g: the Goal this Node will base heuristics off of
-     * @param parent: the Parent Node to this node, if there is one;
+     * Creates a new pathfinder instance
      */
-    public Node(int x, int y, Goal g, Node parent)
+    public Pathfinder()
     {
-        this.setImage(new GreenfootImage(PIXEL_SIZE, PIXEL_SIZE));
-        x_ = x;
-        parent_ = parent;
-        cost_ = 1;//default
-        g_ = g;
-        y_ = y;
-        hasNotBeenChecked = true;
-        d_ = Math.abs(g.getX() - x_) + Math.abs(g.getY()-y_);
-        heuristic_ = Double.MAX_VALUE;
+        running = false;
+        initialized = false;
     }
 
     /**
-     * @return manhattan distance to the goal
+     * Takes key input to move the pathfinder around the world;
      */
-    public double getD()
+    public void keys()
     {
-        return d_;
+        if(Greenfoot.isKeyDown("up"))
+            if(getY() - OFFSET >= 0)
+                setLocation(getX(), getY() - OFFSET);
+        if(Greenfoot.isKeyDown("left"))
+            if(getX() - OFFSET >= 0)
+                setLocation(getX() - OFFSET, getY());
+        if(Greenfoot.isKeyDown("down"))
+            if(getY() + OFFSET < worldHeight_)
+                setLocation(getX(), getY() + OFFSET);
+        if(Greenfoot.isKeyDown("right"))
+            if(getX() + OFFSET < worldWidth_)
+                setLocation(getX() + OFFSET, getY());
     }
 
     /**
-     * @return the current best parent; i.e. the one with the lowest cost
+     * clears all collections and arrays pertaining to this pathfinder
      */
-    public Node getParent()
+    public void clearSets()
     {
-        return parent_;
-    }
-
-    /**
-     * Checks if this Node is traverseable
-     * @return: True: if this Node is not off-screen or in a wall
-     */
-    public boolean isInvalid()
-    {
-        if(hasNotBeenChecked)
+        nodeMap = new Node[worldWidth_][worldHeight_];
+        getWorld().removeObjects(getWorld().getObjects(Node.class));
+        for(int x = 0; x < worldWidth_; x++)
         {
-            hasNotBeenChecked = false;
-            return valid = x_ < 0 || x_ > getWorld().getWidth() || y_ < 0 || y_ > getWorld().getHeight() || this.isTouching(Wall.class);
-        }
-        else
-            return valid;
-    }
-
-    /**
-     * checks if a Node is better than the parent, and replaces the parent if so.
-     * @param n: the Node to be checked
-     */
-    public void updateHeuristic(Node n)//updates if the new parent is better
-    {
-        if(this.isInvalid())
-        {
-            return;
-        }
-        else if(n != null)
-        {
-            double posH = calcH(n);
-            if(posH < heuristic_)
+            for(int y = 0; y < worldHeight_; y++)
             {
-                cost_ = n.cost_ + 1;
-                parent_ = n;
-                heuristic_ = posH;
-                updateImage();
+                nodeMap[x][y] = new Node(x, y, g, null);
+                getWorld().addObject(nodeMap[x][y], x, y);
             }
         }
-        else
+        frontier = new ArrayList(worldWidth_ * worldHeight_);
+        closed = new boolean[worldWidth_][worldHeight_];
+        frontier.add(new Branch(nodeMap[this.getX()][this.getY()]));
+    }
+
+    /**
+     * Main backtracking method for backtracking; A* implementation
+     */
+    public void search()
+    {
+        for(int x = 0; x<frontier.size(); x++)//if a solution exists, backtrack through it and show the solution
         {
-            heuristic_ = 1 + d_;
-            updateImage();
+            Branch b = frontier.get(x);
+            if(b.getNode().isAtGoal())
+            {
+                System.out.println("solved");
+                System.out.println("Press 'c' to show the solution");
+                while(!Greenfoot.isKeyDown("c"))
+                {
+                    Greenfoot.delay(OFFSET);
+                }
+                showSolution(b);
+                running = false;
+                return;
+            }
+        }
+        if(frontier.size() <= 0)//there is nothing left to check in the frontier -> no solution
+        {
+            System.out.println("No path found");
+            clearSets();
+            running = false;
+            return;
+        }
+        else//else expand the open list
+        {
+            Branch bestBranch = frontier.get(0);
+            double optimalH_ = bestBranch.getNode().getHeuristic();
+            int tempIndex = 0;
+            for(int index = 0; index < frontier.size(); index++)
+            {
+                Branch checkB = frontier.get(index);
+                double checkH = checkB.getNode().getHeuristic();
+                if(checkH <= optimalH_)
+                {
+                    bestBranch = checkB;
+                    optimalH_ = checkH;
+                    tempIndex = index;
+                }
+            }
+            frontier.remove(tempIndex);//"pop" the branch from where you want to expand from the open list
+            closed[bestBranch.getNode().getX()][bestBranch.getNode().getY()] = true;//put the "popped" branch in the closed list so it won't be evaluated again
+            bestBranch.getNode().setFontColor(Color.red);
+            expandFrontier(bestBranch);//expand from the popped branch
         }
     }
-    
-    
-    public void setFontColor(java.awt.Color c)//for debugging purposes
+
+    /**
+     * Displays the solution for this path
+     * @param end: the last branch of the path, in which the Node pertaining to this branch intersects the Goal
+     */
+    public void showSolution(Branch end)//iterates over the Nodes in the solution to display a path
     {
-        GreenfootImage img = new GreenfootImage(cost_ + "", FS, c, null);
-        this.setImage(img);
+        for(Node[] row : nodeMap)
+        {
+            for(Node n : row)
+                n.clear();
+        }
+        LinkedList<Node> path = new LinkedList();
+        Node n = end.getNode();
+        path.push(n);
+        while(n != null)
+        {
+            n.displayPath();
+            path.push(n);
+            n = n.getParent();
+        }
+        for(int x = 0; x < path.size() - OFFSET; x++)
+        {
+            Node next = path.get(x);
+            this.setLocation(next.getX(), next.getY());
+            Greenfoot.delay(BUFFER);
+            getWorld().removeObject(next);
+        }
     }
 
     /**
-     * updates the image with the new cost, or heuristic
+     * Adds new branches to be explored to the frontier
+     * @param b: the branch to expand from
      */
-    private void updateImage()
+    private void expandFrontier(Branch b)//adds new Branches **does not include diagonals
     {
-        GreenfootImage img = new GreenfootImage(cost_ + "", FS, null, null);
-        //GreenfootImage img = new GreenfootImage(cost_ + "", FS, null, null);
-        this.setImage(img);
+        int x = b.getNode().getX();
+        int y = b.getNode().getY();
+        if(x - OFFSET >= 0)
+            if(!closed[x - OFFSET][y] && !nodeMap[x - OFFSET][y].isInvalid())
+                frontier.add(new Branch(nodeMap[x - OFFSET][y]));
+        if(x + OFFSET < nodeMap.length)
+            if(!closed[x + OFFSET][y] && !nodeMap[x + OFFSET][y].isInvalid())
+                frontier.add(new Branch(nodeMap[x + OFFSET][y]));
+        if(y - OFFSET >= 0)
+            if(!closed[x][y - OFFSET] && !nodeMap[x][y - OFFSET].isInvalid())
+                frontier.add(new Branch(nodeMap[x][y - OFFSET]));
+        if(y + OFFSET < nodeMap[0].length)
+            if(!closed[x][y + OFFSET] && !nodeMap[x][y + OFFSET].isInvalid())
+                frontier.add(new Branch(nodeMap[x][y + OFFSET]));
+    }
+
+    public void act()
+    {
+        if(!initialized)
+        {
+            worldWidth_ = getWorld().getWidth();
+            worldHeight_ = getWorld().getHeight();
+            g = ((Maze)getWorld()).getGoal();
+        }
+        if(running)
+        {
+            search();
+        }
+        else if(!running && Greenfoot.isKeyDown("space"))
+        {
+            clearSets();
+            running = true;
+        }
+        else
+        {
+            getWorld().removeObjects(getWorld().getObjects(Node.class));
+            keys();
+        }
     }
 
     /**
-     * Changes the color of this Node to display a path
+     * A branch of Nodes
+     * 
+     * @node_: the main Node
      */
-    public void displayPath()
+    private class Branch
     {
-        GreenfootImage img = new GreenfootImage(PIXEL_SIZE, PIXEL_SIZE);
-        img.setColor(Color.red);
-        img.fill();
-        this.setImage(img);
-    }
+        private Node node_;
 
-    /**
-     * Changes this Node to be a white square
-     */
-    public void clear()
-    {
-        this.setImage(new GreenfootImage(PIXEL_SIZE, PIXEL_SIZE));
-    }
+        /**
+         * Creates a new Branch instance
+         * @param n: the Node this Branch extends off of; the main Node
+         */
+        private Branch(Node n)
+        {
+            node_ = n;
+            updateNeighbors();
+        }
 
-    /**
-     * Check if this Node is at the goal
-     * @return: True if this Node is at the Goal, False otherwise
-     */
-    public boolean isAtGoal()
-    {
-        return this.isTouching(Goal.class);
-    }
+        /**
+         * updates heuristics and costs for all neighbouring nodes to the main Node
+         */
+        private void updateNeighbors()//updates all the neighboring nodes to the main node
+        {
+            int x = node_.getX();
+            int y = node_.getY();
+            if(x - OFFSET >= 0)
+                if(!closed[x - OFFSET][y])
+                    nodeMap[x - OFFSET][y].updateHeuristic(this.getNode());
+            if(x + OFFSET < nodeMap.length)
+                if(!closed[x + OFFSET][y])
+                    nodeMap[x + OFFSET][y].updateHeuristic(this.getNode());
+            if(y - OFFSET >= 0)
+                if(!closed[x][y - OFFSET])
+                    nodeMap[x][y - OFFSET].updateHeuristic(this.getNode());
+            if(y + OFFSET < nodeMap[0].length)
+                if(!closed[x][y + OFFSET])
+                    nodeMap[x][y + OFFSET].updateHeuristic(this.getNode());
+        }
 
-    /**
-     * Return the heuristic of this Node
-     * @return: the current heuristic
-     */
-    public double getHeuristic()
-    {
-        return heuristic_;
-    }
-
-    /**
-     * Calculates the heuristic given a Node n
-     * "recursively" finds the cost of this node using the cost of a parent
-     * - same idea as computing the fibonacci sequence
-     * @param n
-     * @return
-     */
-    public double calcH(Node n)
-    {
-        double posCost = n.cost_ + 1;
-        return posCost + d_;
+        /**
+         * @return: the main Node
+         */
+        private Node getNode()
+        {
+            return node_;
+        }
     }
 }
