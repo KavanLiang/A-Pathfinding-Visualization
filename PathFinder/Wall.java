@@ -1,12 +1,17 @@
 import greenfoot.*;
 import java.awt.Color;
+
+/**
+* A wall that the pathfinder cannot traverse in it's path
+* @PIXEL_SIZE: the size of the image representing this wall
+*/
 public class Wall extends Actor
 {
-    /**
-     * Act - do whatever the Wall wants to do. This method is called whenever
-     * the 'Act' or 'Run' button gets pressed in the environment.
-     */
     private final static int PIXEL_SIZE = 50;
+    
+    /**
+    * Creates an new Wall instance
+    */
     public Wall()
     {
         GreenfootImage wall = new GreenfootImage(PIXEL_SIZE, PIXEL_SIZE);
@@ -14,6 +19,7 @@ public class Wall extends Actor
         wall.fill();
         this.setImage(wall);
     }
+    
     public void act() 
     {
         // Add your action code here.
